@@ -1,5 +1,6 @@
 #include "headers/olc6502.h"
 #include <cstdint>
+#include <opencl-c-base.h>
 #include <sys/types.h>
 #include "headers/Bus.h"
 
@@ -216,18 +217,21 @@ uint8_t olc6502::ABY()
 }
 
 
-uint8_t olc6502::IND()
+uint8_t olc6502::IND() //indirect addressing
 {
-
-
+	//Goes to an address in memory that contains an address in memory. 
+	//Since an address wont fit in a single index of memory, it needs to split it across 2. 
 	uint16_t ptr_lo =read(pc);
 	pc++;
 	uint16_t ptr_hi=read(pc);
 	pc++;
 
-	uint16_t ptr = (ptr_hi << 8 ) | ptr_lo;
+	uint16_t ptr = (ptr_hi << 8 ) | ptr_lo; 
 
-	if (ptr_lo == 0x00FF)
+	//Above would normally be enough for indirect addressing.
+	//however, the NES has a bug that incorrectly incremented the pointer if it entered a new page. 
+
+	if (ptr_lo == 0x00FF) //simulate bug
 	{
 		addr_abs=(read(ptr & 0xFF00)<<8) | read(ptr+0);
 	}
@@ -236,7 +240,277 @@ uint8_t olc6502::IND()
 		addr_abs =(read(ptr +1)<<8) | read (ptr+0);
 	}
 
-
-	
 	return 0;
 }
+
+uint8_t olc6502::IZX()
+{
+	uint16_t t=read(pc);
+	pc++;
+
+
+	uint16_t lo=read((uint16_t)(t+(uint16_t)x)&0x00FF);
+	uint16_t hi = read((uint16_t)(t+(uint16_t)x+1)&0x00FF);
+
+	addr_abs=(hi<<8) | lo;
+
+	return 0;
+}
+
+uint8_t olc6502::IZY()
+{
+	uint16_t t=read(pc);
+	pc++;
+
+	uint16_t lo=read(t+0x00FF);
+	uint16_t hi = read((t+1) & 0x00FF);
+
+	addr_abs = (hi<<8) | lo;
+	addr_abs +=y;
+
+	if((addr_abs & 0xFF00)!=(hi<<8))
+	{
+		return 1;
+	}
+	else 
+	{
+		return 0;
+	}
+}
+
+
+uint8_t olc6502::REL()
+{
+	addr_rel=read(pc);
+	pc++;
+	if (addr_rel & 0x80)
+	{
+		addr_rel |= 0xFF00;
+	}
+	return 0;
+}
+
+//Instructions
+
+
+uint8_t olc6502::fetch()
+{
+	if (!(lookup[opcode].addrmode ==&olc6502::IMP)) //for all instructions except implied
+	{
+		fetched = read(addr_abs);
+	}
+	return fetched;
+}
+
+uint8_t olc6502::AND()
+{
+	fetch();
+	a=a&fetched;
+	SetFlag(Z,a==0x00);
+	SetFlag(N,a&0x80); //if bit z is 1, then the number is negative
+	return 1; //return indicates if more clocks might be required for the insrtuction
+}
+
+uint8_t olc6502::BCS() //branch if carry is set instrction.
+{
+	if (GetFlag(C)==1)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BCC() //branch if carry clear
+{
+	if (GetFlag(C)==0)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+uint8_t olc6502::BEQ()
+{
+		if (GetFlag(Z)==1) //if number is 0.
+			//subbtracts the compared number from loaded number. If result is 0, its equal. 
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BMI() //branch if negative
+{
+	if (GetFlag(N)==1)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BNE() //branch if not equal. 
+	//branches if the result of subtraction is not 0
+{
+	if (GetFlag(Z)==0)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BPL() //Branch if positive	
+{
+	if (GetFlag(N)==0)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BVC() //branch if Overflow
+{
+	if (GetFlag(V)==0)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::BVS() //branch if not Overflow
+{
+	if (GetFlag(V)==1)
+	{
+		cycles++; //if a branch is required, add another clock automatrically
+		addr_abs=pc+addr_rel; //branches can only branch a small distance relative to current address
+		//addr_rel is the offset from base address addr_abs
+		if((addr_abs&0xFF00)!= (pc & 0xFF00)) //if a new page is crossed
+		{
+			cycles++; //add another clock cycle
+		}
+	pc=addr_abs; //set pc to the branch address. 
+	}
+	return 0;
+}
+
+uint8_t olc6502::CLC() //set carry bit
+{
+	SetFlag(C,false);
+	return 0;
+}
+
+uint8_t olc6502::CLD() //set carry bit
+{
+	SetFlag(D,false);
+	return 0;
+}
+
+uint8_t olc6502::CLV() //set carry bit
+{
+	SetFlag(C,false);
+	return 0;
+}
+
+
+uint8_t olc6502::CLI() //set carry bit
+{
+	SetFlag(I,false);
+	return 0;
+}
+
+uint8_t olc6502::ADC() 
+{
+//for this function, it is important to consider overflows.
+//if a posative number is added to a another posative number, and the result is negative, a overflow occured. 
+//The same is true for negative and negative addition
+//negative posative addition will never overflow
+//We need to check when an overflow has occured through a logical operation to set the overflow flag accordingly. 
+	fetch();
+
+	uint16_t temp= (uint16_t)a+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds two numbers and potential flag from previous addition
+	SetFlag(C,temp>255);
+	//carry is set if c is greater than 255
+	SetFlag(Z,(temp & 0x00FF)==0);
+	//zero is set if its zero
+	
+	SetFlag(N,temp & 0x80);
+	//negative is set if msb of temp (result) is 1
+
+	SetFlag(V,(~((uint16_t)a ^ (uint16_t)fetched) & ((uint16_t)a ^ (uint16_t)temp))& 0x0080); //this is the logic that determines the state of the overflow flag previously mentioned
+	//overflow is not the same as carry. 
+	//Overflow is is related to the sign bit. A carry is just a carry (>|255|)
+	
+	a=temp&0x00FF;
+	return 1;
+}
+
+uint8_t olc6502::SBC()
+{
+	//subtraction can be implemented very similarly to addition
+	//A=A-M-(1-C). 1-C is the borrow bit
+	//A=A+-M+1+C
+	fetch();
+	uint16_t value=((uint16_t)fetched) ^ 0x00FF;
+
+	uint16_t temp= (uint16_t)a+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds
+	SetFlag(C,temp>255);
+	SetFlag(Z,(temp & 0x00FF)==0);
+	SetFlag(N,temp & 0x80);
+	SetFlag(V,(~((uint16_t)a ^ (uint16_t)fetched) & ((uint16_t)a ^ (uint16_t)temp))& 0x0080); 
+}
+
+uint8_t olc6502::PHA() //push accumulator to stack
+{
+	write(0x0100 +stkp, a);
+	stkp--;
+	return 0;
+}
+
+
