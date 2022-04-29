@@ -52,3 +52,9 @@ The Status Register is 8 bits long, with each bit (except for unused bit 5) indi
 
 #### Memory Addressing modes
 TODO
+
+#### Op codes
+TODO
+
+#### The Stack
+TODO
