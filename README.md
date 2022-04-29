@@ -22,8 +22,15 @@ The 6502 Microprocessor has 6 major registers: the Accumulator, Index registers 
 - Status register
   - Stores processor 
 
+
+
+
 #### Status Register
 The Status Register is 8 bits long, with each bit (except for unused bit 5) indicating a certain flag. The register is configured as follows:
+
+
+
+<img align="right" src="https://user-images.githubusercontent.com/83780720/165876735-cdc260b7-1aaf-4d1f-99c0-4384522bef58.png">
 
 - C
   - Carry bit
