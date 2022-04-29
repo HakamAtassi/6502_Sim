@@ -14,9 +14,30 @@ The 6502 Microprocessor has 6 major registers: the Accumulator, Index registers 
 - Accumulator
   - Stores results of ALU on chip
 - Index registers (X & Y)
-  - a
+  - Used in Indexed and Zero Page Addressing. Particularly useful for instructions that are 2 and 3 Bytes long. 
 - Stack pointer
-  - a
+  - Stores pointer to stack that stores current machine state information
 - Program counter
-  - a
+  - Stores address to next instruction to be excecuted
 - Status register
+  - Stores processor 
+
+#### Status Register
+The Status Register is 8 bits long, with each bit (except for unused bit 5) indicating a certain flag. The register is configured as follows:
+
+- C
+  - Carry bit
+- Z 
+  - Zero bit
+- I
+  - E/N Interrupts
+- D
+  - Decimal Mode
+- B 
+  - Break
+- U
+  - Unused
+- O
+  - Overflow
+- N
+  - Negative
