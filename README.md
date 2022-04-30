@@ -12,10 +12,10 @@ sudo apt install build-essential libglu1-mesa-dev libpng-dev
 ```
 
 ```
-g++ -o olcExampleProgram olcExampleProgram.cpp -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
+g++ -o oldNes_Video1_6502 oldNes_Video1_6502.cpp olc6502.cpp -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17 
 ```
 ```
-./olcExampleProgram
+./oldNes_Video1_6502
 ```
 
 
