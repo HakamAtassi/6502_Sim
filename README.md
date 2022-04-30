@@ -4,7 +4,13 @@
 54 opp codes
 64kB memory
 
-
+### To Build and Run
+```
+g++ -o olcExampleProgram olcExampleProgram.cpp -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
+```
+```
+./olcExampleProgram
+```
 
 
 <img align="right" src="https://user-images.githubusercontent.com/83780720/165873944-c7f24080-adb7-450c-8e1c-7b6cb7d84c1c.png">
