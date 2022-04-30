@@ -6,6 +6,12 @@
 
 ### To Build and Run
 ```
+sudo apt update
+
+sudo apt install build-essential libglu1-mesa-dev libpng-dev
+```
+
+```
 g++ -o olcExampleProgram olcExampleProgram.cpp -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
 ```
 ```
