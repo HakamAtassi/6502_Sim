@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <map>
 
 
 
@@ -22,6 +23,8 @@ class olc6502
 	public:
 	olc6502();
 	~olc6502();
+
+	bool complete(); //for testing
 
 	void ConnectBus(Bus *n){bus=n;} //to Connect to bus 
 		//this gives the cpu access to the ram by providing it with a 
@@ -71,6 +74,7 @@ class olc6502
 		uint8_t STX(); uint8_t STY(); uint8_t TAX(); uint8_t TAY();
 		uint8_t TSX(); uint8_t TXA(); uint8_t TXS(); uint8_t TYA();
 
+		
 	
 		uint8_t XXX(); //illegal Opcodes
 
@@ -106,8 +110,8 @@ class olc6502
 	std::vector<INSTRUCTION> lookup;
 
 
+std::map<uint16_t, std::string> disassemble(uint16_t nstart,uint16_t nStop);
 
-	
 
 private:
 	Bus *bus=nullptr;
@@ -118,5 +122,10 @@ private:
 	uint8_t GetFlag(FLAGS6502 f);
 	void SetFlag(FLAGS6502 f, bool v);
 
+
+#ifdef LOGMODE
+private:
+	FILE* logfile = nullptr;
+#endif
 
 };
