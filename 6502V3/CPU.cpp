@@ -3,21 +3,21 @@
 
 
 //Opcodes (all 56)
-char CPU::ADC(){}; char CPU::AND(){}; char CPU::ASL(){}; char CPU::BCC(){};
-char CPU::BCS(){}; char CPU::BEQ(){}; char CPU::BIT(){}; char CPU::BMI(){};
-char CPU::BNE(){}; char CPU::BPL(){}; char CPU::BRK(){}; char CPU::BVC(){};
-char CPU::BVS(){}; char CPU::CLC(){}; char CPU::CLD(){}; char CPU::CLI(){};
-char CPU::CLV(){}; char CPU::CMP(){}; char CPU::CPX(){}; char CPU::CPY(){};
-char CPU::DEC(){}; char CPU::DEX(){}; char CPU::DEY(){}; char CPU::EOR(){};
-char CPU::INC(){}; char CPU::INX(){}; char CPU::INY(){}; char CPU::JMP(){};
-char CPU::JSR(){}; char CPU::LDX(){}; char CPU::LDY(){};
-char CPU::LSR(){}; char CPU::NOP(){}; char CPU::ORA(){}; char CPU::PHA(){};
-char CPU::PHP(){}; char CPU::PLA(){}; char CPU::PLP(){}; char CPU::ROL(){};
-char CPU::ROR(){}; char CPU::RTI(){}; char CPU::RTS(){}; char CPU::SBC(){};
-char CPU::SEC(){}; char CPU::SED(){}; char CPU::SEI(){}; char CPU::STA(){};
-char CPU::STX(){}; char CPU::STY(){}; char CPU::TAX(){}; char CPU::TAY(){};
-char CPU::TSX(){}; char CPU::TXA(){}; char CPU::TXS(){}; char CPU::TYA(){};
-char CPU::XXX(){}; //illegal Opcodes
+uint8_t CPU::ADC(){}; uint8_t CPU::AND(){}; uint8_t CPU::ASL(){}; uint8_t CPU::BCC(){};
+uint8_t CPU::BCS(){}; uint8_t CPU::BEQ(){}; uint8_t CPU::BIT(){}; uint8_t CPU::BMI(){};
+uint8_t CPU::BNE(){}; uint8_t CPU::BPL(){}; uint8_t CPU::BRK(){}; uint8_t CPU::BVC(){};
+uint8_t CPU::BVS(){}; uint8_t CPU::CLC(){}; uint8_t CPU::CLD(){}; uint8_t CPU::CLI(){};
+uint8_t CPU::CLV(){}; uint8_t CPU::CMP(){}; uint8_t CPU::CPX(){}; uint8_t CPU::CPY(){};
+uint8_t CPU::DEC(){}; uint8_t CPU::DEX(){}; uint8_t CPU::DEY(){}; uint8_t CPU::EOR(){};
+uint8_t CPU::INC(){}; uint8_t CPU::INX(){}; uint8_t CPU::INY(){}; uint8_t CPU::JMP(){};
+uint8_t CPU::JSR(){}; uint8_t CPU::LDX(){}; uint8_t CPU::LDY(){};
+uint8_t CPU::LSR(){}; uint8_t CPU::NOP(){}; uint8_t CPU::ORA(){}; uint8_t CPU::PHA(){};
+uint8_t CPU::PHP(){}; uint8_t CPU::PLA(){}; uint8_t CPU::PLP(){}; uint8_t CPU::ROL(){};
+uint8_t CPU::ROR(){}; uint8_t CPU::RTI(){}; uint8_t CPU::RTS(){}; uint8_t CPU::SBC(){};
+uint8_t CPU::SEC(){}; uint8_t CPU::SED(){}; uint8_t CPU::SEI(){}; uint8_t CPU::STA(){};
+uint8_t CPU::STX(){}; uint8_t CPU::STY(){}; uint8_t CPU::TAX(){}; uint8_t CPU::TAY(){};
+uint8_t CPU::TSX(){}; uint8_t CPU::TXA(){}; uint8_t CPU::TXS(){}; uint8_t CPU::TYA(){};
+uint8_t CPU::XXX(){}; //illegal Opcodes
 
 
 
@@ -80,7 +80,7 @@ void CPU::reset()
         ram->write(i,0); //clears memory
     }
     PC= 0xFFFC; //program starts at 0xFFFC (See C64 startup routine)
-    stackptr=(char)0x0100;    //stack pointer starts at 0x0100;
+    stackptr=(uint8_t)0x0100;    //stack pointer starts at 0x0100;
 
     SetFlag(C,0);   //reset all flags
     SetFlag(Z,0);
@@ -95,19 +95,20 @@ void CPU::reset()
 
 
 
-char CPU::fetch()
+uint8_t CPU::fetch()
 {
-    fetched=ram->read(PC);
+    fetched=(uint8_t)ram->read(PC);
+    cycles=lookup[fetched].cycles;
     PC++;
     cycles--;
 }
 
-char CPU::getOperand()  
+uint8_t CPU::getOperand()  
 {
     /*for immidiate addressing, operand is already available in that address in the form of a literal
     sometimes, that is not the case, and the cpu must take several steps to locate the operand*/
 
-    operand=(this->*lookup[fetched].addressing_mode)();  //find the operand based on fetched instruction
+    (this->*lookup[fetched].addressing_mode)();  //find the operand based on fetched instruction
     //store in helper variable for use in operation
 
 
@@ -117,13 +118,11 @@ char CPU::getOperand()
 void CPU::execute()
 {
     fetch();
-    cycles=lookup[fetched].cycles;  //for debugging
     current_opcode=lookup[fetched].opcode_name;
-
-    (this->*lookup[fetched].opcode)();  //exectures opcode based on vector table
-
+    getOperand();
+    (this->*lookup[(uint8_t)fetched].opcode)();  //exectures opcode based on vector table
+    cycles--;
     //maybe reset oprerand variable here?
-  
 }
 
 
@@ -138,70 +137,75 @@ void CPU::dumpData()
     }
 }
 
+void CPU::dumpRegisters()
+{
+    printf("X: %X, Y: %X, A: %X\n",X, Y, A);
+}
+
 
 //**ADDRESSING MODES BELOW**/
 
-char CPU::IMM()
+uint8_t CPU::IMM()
 {
     operand=ram->read(PC);
     PC++;
     cycles--;
 }
 
-char CPU::ZPX()
+uint8_t CPU::ZPX()
 {
     return 0;
 }
 
-char CPU::REL()
+uint8_t CPU::REL()
 {
     return 0;
 }
 
-char CPU::ABX()
+uint8_t CPU::ABX()
 {
     return 0;
 }
 
-char CPU::IND()
+uint8_t CPU::IND()
 {
     return 0;
 }
 
-char CPU::IZY()
+uint8_t CPU::IZY()
 {
     return 0;
 }
 
-char CPU::IMP()
+uint8_t CPU::IMP()
 {
     return 0;
 }
 
-char CPU::ZP0()
-{
-    return 0;
-}
-
-
-
-char CPU::ZPY()
-{
-    return 0;
-}
-
-char CPU::ABS()
+uint8_t CPU::ZP0()
 {
     return 0;
 }
 
 
-char CPU::ABY()
+
+uint8_t CPU::ZPY()
 {
     return 0;
 }
 
-char CPU::IZX()
+uint8_t CPU::ABS()
+{
+    return 0;
+}
+
+
+uint8_t CPU::ABY()
+{
+    return 0;
+}
+
+uint8_t CPU::IZX()
 {
     return 0;
 }
@@ -210,7 +214,7 @@ char CPU::IZX()
 
 /**OPERTAIONS BELOW**/
 
-char CPU::LDA()
+uint8_t CPU::LDA()
 {
     A=operand;
     SetFlag(Z,(operand==0));

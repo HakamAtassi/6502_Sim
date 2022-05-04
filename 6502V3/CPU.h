@@ -11,20 +11,20 @@ class CPU
     Memory* ram;    //the system's memory
     
 
-    char status;    //8 bit container for status register of the cpu. 
-    char fetched;     //current fetched cycle. AKA the instruction currently being executed
-    short int PC;   //16 bit long PC (same size as an address)
-    char stackptr;
+    uint8_t status;    //8 bit container for status register of the cpu. 
+    uint8_t fetched;     //current fetched cycle. AKA the instruction currently being executed
+    uint16_t PC;   //16 bit long PC (same size as an address)
+    uint8_t stackptr;
 
     //"Main" registers
-    char X; //X reg
-    char Y; //Y reg
-    char A; //accumulator
+    uint8_t X; //X reg
+    uint8_t Y; //Y reg
+    uint8_t A; //accumulator
 
 
     //helper members
     int cycles=0;
-    char operand;
+    uint8_t operand;
     std::string current_opcode;
 
 
@@ -40,32 +40,34 @@ class CPU
 		N=(1<<7), //Negative  
     };
 
-    char GetFlag(STATUS S, int value); //returns a specific bit from the status register 
+    uint8_t GetFlag(STATUS S, int value); //returns a specific bit from the status register 
     void SetFlag(STATUS S, int value); //sets/resets a specific bit from the status register 
 
-    char fetch();   //fetches instruction
-    char getOperand();
+
+public:
+
+    uint8_t fetch();   //fetches instruction
+    uint8_t getOperand();
     void execute(); //exectures instruction based on lookup table.
     
 
 
-public:
     //Opcodes (all 56)
-    char ADC(); char AND(); char ASL(); char BCC();
-    char BCS(); char BEQ(); char BIT(); char BMI();
-    char BNE(); char BPL(); char BRK(); char BVC();
-    char BVS(); char CLC(); char CLD(); char CLI();
-    char CLV(); char CMP(); char CPX(); char CPY();
-    char DEC(); char DEX(); char DEY(); char EOR();
-    char INC(); char INX(); char INY(); char JMP();
-    char JSR(); char LDA(); char LDX(); char LDY();
-    char LSR(); char NOP(); char ORA(); char PHA();
-    char PHP(); char PLA(); char PLP(); char ROL();
-    char ROR(); char RTI(); char RTS(); char SBC();
-    char SEC(); char SED(); char SEI(); char STA();
-    char STX(); char STY(); char TAX(); char TAY();
-    char TSX(); char TXA(); char TXS(); char TYA();
-    char XXX(); //illegal Opcodes
+    uint8_t ADC(); uint8_t AND(); uint8_t ASL(); uint8_t BCC();
+    uint8_t BCS(); uint8_t BEQ(); uint8_t BIT(); uint8_t BMI();
+    uint8_t BNE(); uint8_t BPL(); uint8_t BRK(); uint8_t BVC();
+    uint8_t BVS(); uint8_t CLC(); uint8_t CLD(); uint8_t CLI();
+    uint8_t CLV(); uint8_t CMP(); uint8_t CPX(); uint8_t CPY();
+    uint8_t DEC(); uint8_t DEX(); uint8_t DEY(); uint8_t EOR();
+    uint8_t INC(); uint8_t INX(); uint8_t INY(); uint8_t JMP();
+    uint8_t JSR(); uint8_t LDA(); uint8_t LDX(); uint8_t LDY();
+    uint8_t LSR(); uint8_t NOP(); uint8_t ORA(); uint8_t PHA();
+    uint8_t PHP(); uint8_t PLA(); uint8_t PLP(); uint8_t ROL();
+    uint8_t ROR(); uint8_t RTI(); uint8_t RTS(); uint8_t SBC();
+    uint8_t SEC(); uint8_t SED(); uint8_t SEI(); uint8_t STA();
+    uint8_t STX(); uint8_t STY(); uint8_t TAX(); uint8_t TAY();
+    uint8_t TSX(); uint8_t TXA(); uint8_t TXS(); uint8_t TYA();
+    uint8_t XXX(); //illegal Opcodes
 
 
     void reset();   //resets micro
@@ -74,20 +76,20 @@ public:
 
 
 	//addressing modes: 16 modes available...12 used here. 
-	char IMP();     char IMM();
-	char ZP0();     char ZPX();
-	char ZPY();     char REL();
-	char ABS();     char ABX();
-	char ABY();     char IND();
-	char IZX();     char IZY(); 
+	uint8_t IMP();     uint8_t IMM();
+	uint8_t ZP0();     uint8_t ZPX();
+	uint8_t ZPY();     uint8_t REL();
+	uint8_t ABS();     uint8_t ABX();
+	uint8_t ABY();     uint8_t IND();
+	uint8_t IZX();     uint8_t IZY(); 
 
 
     struct Instruction
     {
         std::string opcode_name;
-        char (CPU::*opcode)(void);
-        char (CPU::*addressing_mode)(void);
-        int cycles=0;
+        uint8_t (CPU::*opcode)(void);
+        uint8_t (CPU::*addressing_mode)(void);
+        int cycles;
     };
     
 
@@ -95,11 +97,11 @@ public:
 
 
     CPU(Memory *_ram);
-    uint8_t read(unsigned short int Address);
+    uint8_t read(uint16_t Address);
     void write(short int Address, uint8_t Data);
 
     void dumpData(); //dumps all microprocessor data
-
+    void dumpRegisters();
 };
 
 #endif
