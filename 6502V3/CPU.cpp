@@ -1,6 +1,5 @@
 #include "CPU.h"
 
-
 CPU::CPU()
 {
 	lookup = //these values have to be hardcoded. there is no other way around it. Each op code has a few possible adderssing mode and number of clocks
@@ -34,11 +33,68 @@ void CPU::write(short int Address, char Data)
     ram->write(Address, Data);
 }
 
-void CPU::reset()
+
+void CPU::SetFlag(STATUS S, int value)
 {
-    for(int i=0; i<MAX_MEM;i++)
+    if(value==0)
     {
-        ram->read(i,0x00);
+        status=status&(~S); //bit mask to set off
+    }
+    else
+    {
+        status=status|S;  //bit mask to set on 
     }
 }
 
+void CPU::reset()
+{
+    for(int i=0; i<64*1024;i++)
+    {
+        ram->write(i,0x00); //clears memory
+    }
+    PC= 0xFFFC; //program starts at 0xFFFC (See C64 startup routine)
+    stackptr=0x0100;    //stack pointer starts at 0x0100;
+
+    SetFlag(C,0);   //reset all flags
+    SetFlag(Z,0);
+    SetFlag(I,0);
+    SetFlag(D,0);
+    SetFlag(B,0);
+    SetFlag(U,0);
+    SetFlag(V,0);
+    SetFlag(N,0);
+    A=X=Y=0; //clears registers
+}
+
+
+
+char CPU::fetch()
+{
+    fetched=ram->read(PC);
+    PC++;
+    cycles--;
+}
+
+char CPU::getOperand()  
+{
+    /*for immidiate addressing, operand is already available in that address in the form of a literal
+    sometimes, that is not the case, and the cpu must take several steps to locate the operand*/
+
+    operand=(this->*lookup[fetched].addressing_mode)();  //find the operand based on fetched instruction
+    //store in helper variable for use in operation
+
+
+}
+
+
+void CPU::execute()
+{
+    fetch();
+    cycles=lookup[fetched].cycles;  //for debugging
+    current_opcode=lookup[fetched].opcode_name;
+
+    (this->*lookup[fetched].opcode)();  //exectures opcode based on vector table
+
+    //maybe reset oprerand variable here?
+  
+}

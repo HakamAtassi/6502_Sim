@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include "Memory.h"
-static constexpr MAX_MEM=64*1024;
 
 class CPU
 {
@@ -24,6 +23,10 @@ class CPU
     char A; //accumulator
 
 
+    //helper members
+    int cycles=0;
+    std::string current_opcode;
+
 
     enum STATUS //status registers 
     {
@@ -37,12 +40,13 @@ class CPU
 		N=(1<<7), //Negative  
     };
 
-    char GetFlag(); //returns a specific bit from the status register 
-    char SetFlag(); //sets/resets a specific bit from the status register 
+    char GetFlag(STATUS S, int value); //returns a specific bit from the status register 
+    void SetFlag(STATUS S, int value); //sets/resets a specific bit from the status register 
 
     char fetch();   //fetches instruction
-    char execute(); //exectures instruction based on lookup table.
-
+    char getOperand();
+    void execute(); //exectures instruction based on lookup table.
+    
 
 
 
