@@ -1,6 +1,28 @@
 #include "CPU.h"
+#include <iostream>
 
-CPU::CPU()
+
+//Opcodes (all 56)
+char CPU::ADC(){}; char CPU::AND(){}; char CPU::ASL(){}; char CPU::BCC(){};
+char CPU::BCS(){}; char CPU::BEQ(){}; char CPU::BIT(){}; char CPU::BMI(){};
+char CPU::BNE(){}; char CPU::BPL(){}; char CPU::BRK(){}; char CPU::BVC(){};
+char CPU::BVS(){}; char CPU::CLC(){}; char CPU::CLD(){}; char CPU::CLI(){};
+char CPU::CLV(){}; char CPU::CMP(){}; char CPU::CPX(){}; char CPU::CPY(){};
+char CPU::DEC(){}; char CPU::DEX(){}; char CPU::DEY(){}; char CPU::EOR(){};
+char CPU::INC(){}; char CPU::INX(){}; char CPU::INY(){}; char CPU::JMP(){};
+char CPU::JSR(){}; char CPU::LDX(){}; char CPU::LDY(){};
+char CPU::LSR(){}; char CPU::NOP(){}; char CPU::ORA(){}; char CPU::PHA(){};
+char CPU::PHP(){}; char CPU::PLA(){}; char CPU::PLP(){}; char CPU::ROL(){};
+char CPU::ROR(){}; char CPU::RTI(){}; char CPU::RTS(){}; char CPU::SBC(){};
+char CPU::SEC(){}; char CPU::SED(){}; char CPU::SEI(){}; char CPU::STA(){};
+char CPU::STX(){}; char CPU::STY(){}; char CPU::TAX(){}; char CPU::TAY(){};
+char CPU::TSX(){}; char CPU::TXA(){}; char CPU::TXS(){}; char CPU::TYA(){};
+char CPU::XXX(){}; //illegal Opcodes
+
+
+
+
+CPU::CPU(Memory *_ram)
 {
 	lookup = //these values have to be hardcoded. there is no other way around it. Each op code has a few possible adderssing mode and number of clocks
     {
@@ -21,14 +43,18 @@ CPU::CPU()
 		{ "CPX", &CPU::CPX, &CPU::IMM, 2 },{ "SBC", &CPU::SBC, &CPU::IZX, 6 },{ "???", &CPU::NOP, &CPU::IMP, 2 },{ "???", &CPU::XXX, &CPU::IMP, 8 },{ "CPX", &CPU::CPX, &CPU::ZP0, 3 },{ "SBC", &CPU::SBC, &CPU::ZP0, 3 },{ "INC", &CPU::INC, &CPU::ZP0, 5 },{ "???", &CPU::XXX, &CPU::IMP, 5 },{ "INX", &CPU::INX, &CPU::IMP, 2 },{ "SBC", &CPU::SBC, &CPU::IMM, 2 },{ "NOP", &CPU::NOP, &CPU::IMP, 2 },{ "???", &CPU::SBC, &CPU::IMP, 2 },{ "CPX", &CPU::CPX, &CPU::ABS, 4 },{ "SBC", &CPU::SBC, &CPU::ABS, 4 },{ "INC", &CPU::INC, &CPU::ABS, 6 },{ "???", &CPU::XXX, &CPU::IMP, 6 },
 		{ "BEQ", &CPU::BEQ, &CPU::REL, 2 },{ "SBC", &CPU::SBC, &CPU::IZY, 5 },{ "???", &CPU::XXX, &CPU::IMP, 2 },{ "???", &CPU::XXX, &CPU::IMP, 8 },{ "???", &CPU::NOP, &CPU::IMP, 4 },{ "SBC", &CPU::SBC, &CPU::ZPX, 4 },{ "INC", &CPU::INC, &CPU::ZPX, 6 },{ "???", &CPU::XXX, &CPU::IMP, 6 },{ "SED", &CPU::SED, &CPU::IMP, 2 },{ "SBC", &CPU::SBC, &CPU::ABY, 4 },{ "NOP", &CPU::NOP, &CPU::IMP, 2 },{ "???", &CPU::XXX, &CPU::IMP, 7 },{ "???", &CPU::NOP, &CPU::IMP, 4 },{ "SBC", &CPU::SBC, &CPU::ABX, 4 },{ "INC", &CPU::INC, &CPU::ABX, 7 },{ "???", &CPU::XXX, &CPU::IMP, 7 },
 	};
+
+    
+    ram=_ram;
+
 }
 
-char CPU::read(short int Address)
+uint8_t CPU::read(uint16_t Address)
 {
     return ram->read(Address);
 }
 
-void CPU::write(short int Address, char Data)
+void CPU::write(short int Address, uint8_t Data)
 {
     ram->write(Address, Data);
 }
@@ -48,12 +74,13 @@ void CPU::SetFlag(STATUS S, int value)
 
 void CPU::reset()
 {
+
     for(int i=0; i<64*1024;i++)
     {
-        ram->write(i,0x00); //clears memory
+        ram->write(i,0); //clears memory
     }
     PC= 0xFFFC; //program starts at 0xFFFC (See C64 startup routine)
-    stackptr=0x0100;    //stack pointer starts at 0x0100;
+    stackptr=(char)0x0100;    //stack pointer starts at 0x0100;
 
     SetFlag(C,0);   //reset all flags
     SetFlag(Z,0);
@@ -98,3 +125,96 @@ void CPU::execute()
     //maybe reset oprerand variable here?
   
 }
+
+
+void CPU::dumpData()
+{
+    printf("X reg: %X, Y reg: %X, A reg= %X \n PC=%X, STKPTR=%X",X,Y,A,PC,stackptr);
+    printf("\n");
+    for(int i=0;i<64*1024;i++)
+    {
+        printf("Address: %X, Data: %X\n", i,read(i));
+
+    }
+}
+
+
+//**ADDRESSING MODES BELOW**/
+
+char CPU::IMM()
+{
+    operand=ram->read(PC);
+    PC++;
+    cycles--;
+}
+
+char CPU::ZPX()
+{
+    return 0;
+}
+
+char CPU::REL()
+{
+    return 0;
+}
+
+char CPU::ABX()
+{
+    return 0;
+}
+
+char CPU::IND()
+{
+    return 0;
+}
+
+char CPU::IZY()
+{
+    return 0;
+}
+
+char CPU::IMP()
+{
+    return 0;
+}
+
+char CPU::ZP0()
+{
+    return 0;
+}
+
+
+
+char CPU::ZPY()
+{
+    return 0;
+}
+
+char CPU::ABS()
+{
+    return 0;
+}
+
+
+char CPU::ABY()
+{
+    return 0;
+}
+
+char CPU::IZX()
+{
+    return 0;
+}
+
+
+
+/**OPERTAIONS BELOW**/
+
+char CPU::LDA()
+{
+    A=operand;
+    SetFlag(Z,(operand==0));
+    SetFlag(N,!(operand&10000000==0));
+    return 0;
+}
+

@@ -43,11 +43,6 @@ struct Mem
 struct CPU
 {
 
-
-
-
-
-
     u32 cycles=0; //number of cycles to excecute instrcution.
 
 
@@ -62,11 +57,6 @@ struct CPU
 		uint8_t(CPU::*addrmode)(void)=nullptr;
 		uint8_t cycles=0;
     };
-
-
-
-
-
 
     Word PC; // Program counter is 16 bits (1 word | 1 address width)
     Word SP; //Stack pointer

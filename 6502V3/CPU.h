@@ -1,19 +1,18 @@
 #ifndef CPU_H_
 #define CPU_H_
+
 #include <vector>
 #include <string>
 #include "Memory.h"
 
+
 class CPU
 {
-
-
-
-    Memory* ram=nullptr;    //the system's memory
+    Memory* ram;    //the system's memory
+    
 
     char status;    //8 bit container for status register of the cpu. 
     char fetched;     //current fetched cycle. AKA the instruction currently being executed
-    unsigned int cycles;    //current number of clocks needed to execut the current instruction
     short int PC;   //16 bit long PC (same size as an address)
     char stackptr;
 
@@ -25,6 +24,7 @@ class CPU
 
     //helper members
     int cycles=0;
+    char operand;
     std::string current_opcode;
 
 
@@ -49,7 +49,7 @@ class CPU
     
 
 
-
+public:
     //Opcodes (all 56)
     char ADC(); char AND(); char ASL(); char BCC();
     char BCS(); char BEQ(); char BIT(); char BMI();
@@ -94,11 +94,12 @@ class CPU
     std::vector<Instruction> lookup;
 
 
-    CPU();
-    char read(short int Address);
-    void write(short int Address, char Data);
+    CPU(Memory *_ram);
+    uint8_t read(unsigned short int Address);
+    void write(short int Address, uint8_t Data);
 
+    void dumpData(); //dumps all microprocessor data
 
 };
 
-#endif 
+#endif
