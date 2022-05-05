@@ -2,21 +2,90 @@
 #include <iostream>
 
 
-//Opcodes (all 56)
-uint8_t CPU::ADC(){}; uint8_t CPU::AND(){}; uint8_t CPU::ASL(){}; uint8_t CPU::BCC(){};
-uint8_t CPU::BCS(){}; uint8_t CPU::BEQ(){}; uint8_t CPU::BIT(){}; uint8_t CPU::BMI(){};
-uint8_t CPU::BNE(){}; uint8_t CPU::BPL(){}; uint8_t CPU::BRK(){}; uint8_t CPU::BVC(){};
-uint8_t CPU::BVS(){}; uint8_t CPU::CLC(){}; uint8_t CPU::CLD(){}; uint8_t CPU::CLI(){};
-uint8_t CPU::CLV(){}; uint8_t CPU::CMP(){}; uint8_t CPU::CPX(){}; uint8_t CPU::CPY(){};
-uint8_t CPU::DEC(){}; uint8_t CPU::DEX(){}; uint8_t CPU::DEY(){}; uint8_t CPU::EOR(){};
-uint8_t CPU::INC(){}; uint8_t CPU::INX(){}; uint8_t CPU::INY(){}; uint8_t CPU::JMP(){};
-uint8_t CPU::JSR(){}; uint8_t CPU::LDX(){}; uint8_t CPU::LDY(){};
-uint8_t CPU::LSR(){}; uint8_t CPU::NOP(){}; uint8_t CPU::ORA(){}; uint8_t CPU::PHA(){};
-uint8_t CPU::PHP(){}; uint8_t CPU::PLA(){}; uint8_t CPU::PLP(){}; uint8_t CPU::ROL(){};
-uint8_t CPU::ROR(){}; uint8_t CPU::RTI(){}; uint8_t CPU::RTS(){}; uint8_t CPU::SBC(){};
-uint8_t CPU::SEC(){}; uint8_t CPU::SED(){}; uint8_t CPU::SEI(){}; uint8_t CPU::STA(){};
-uint8_t CPU::STX(){}; uint8_t CPU::STY(){}; uint8_t CPU::TAX(){}; uint8_t CPU::TAY(){};
-uint8_t CPU::TSX(){}; uint8_t CPU::TXA(){}; uint8_t CPU::TXS(){}; uint8_t CPU::TYA(){};
+
+/**OPERTAIONS BELOW**/
+
+uint8_t CPU::LDA()
+{
+    A=operand;
+    SetFlag(Z,(operand==0));
+    SetFlag(N,!(operand&10000000==0));
+    return 0;
+}
+
+uint8_t CPU::ADC()
+{
+
+}; 
+uint8_t CPU::AND(){}; 
+uint8_t CPU::ASL(){}; 
+uint8_t CPU::BCC(){};
+uint8_t CPU::BCS(){}; 
+uint8_t CPU::BEQ(){}; 
+uint8_t CPU::BIT(){}; 
+uint8_t CPU::BMI(){};
+uint8_t CPU::BNE(){}; 
+uint8_t CPU::BPL(){}; 
+uint8_t CPU::BRK(){}; 
+uint8_t CPU::BVC(){};
+uint8_t CPU::BVS(){}; 
+uint8_t CPU::CLC(){}; 
+uint8_t CPU::CLD(){}; 
+uint8_t CPU::CLI(){};
+uint8_t CPU::CLV(){}; 
+uint8_t CPU::CMP(){}; 
+uint8_t CPU::CPX(){}; 
+uint8_t CPU::CPY(){};
+uint8_t CPU::DEC(){}; 
+uint8_t CPU::DEX(){}; 
+uint8_t CPU::DEY(){}; 
+uint8_t CPU::EOR(){};
+uint8_t CPU::INC(){}; 
+uint8_t CPU::INX(){}; 
+uint8_t CPU::INY(){}; 
+uint8_t CPU::JMP(){};
+uint8_t CPU::JSR(){}; 
+
+uint8_t CPU::LDX()  //load into register X
+{
+    X=operand;
+    SetFlag(Z,(operand==0));
+    SetFlag(N,!(operand&10000000==0));
+    return 0;
+}; 
+
+uint8_t CPU::LDY()
+{
+    Y=operand;
+    SetFlag(Z,(operand==0));
+    SetFlag(N,!(operand&10000000==0));
+    return 0;
+};
+
+uint8_t CPU::LSR(){}; 
+uint8_t CPU::NOP(){}; 
+uint8_t CPU::ORA(){}; 
+uint8_t CPU::PHA(){};
+uint8_t CPU::PHP(){}; 
+uint8_t CPU::PLA(){}; 
+uint8_t CPU::PLP(){}; 
+uint8_t CPU::ROL(){};
+uint8_t CPU::ROR(){}; 
+uint8_t CPU::RTI(){}; 
+uint8_t CPU::RTS(){}; 
+uint8_t CPU::SBC(){};
+uint8_t CPU::SEC(){}; 
+uint8_t CPU::SED(){}; 
+uint8_t CPU::SEI(){}; 
+uint8_t CPU::STA(){};
+uint8_t CPU::STX(){}; 
+uint8_t CPU::STY(){}; 
+uint8_t CPU::TAX(){}; 
+uint8_t CPU::TAY(){};
+uint8_t CPU::TSX(){}; 
+uint8_t CPU::TXA(){}; 
+uint8_t CPU::TXS(){}; 
+uint8_t CPU::TYA(){};
 uint8_t CPU::XXX(){}; //illegal Opcodes
 
 
@@ -77,9 +146,12 @@ void CPU::reset()
 
     for(int i=0; i<64*1024;i++)
     {
-        ram->write(i,0); //clears memory
+        if(i!=0xFFFC && i!=0xFFFD)  //dont reset part of memory that stores where the program starts
+        {
+            ram->write(i,0); //clears memory
+        }
     }
-    PC= 0xFFFC; //program starts at 0xFFFC (See C64 startup routine)
+    PC= ram->read(0xFFFC)|ram->read(0xFFFD)<<8; //program starts at address in 0xFFFC (See C64 startup routine)
     stackptr=(uint8_t)0x0100;    //stack pointer starts at 0x0100;
 
     SetFlag(C,0);   //reset all flags
@@ -139,86 +211,140 @@ void CPU::dumpData()
 
 void CPU::dumpRegisters()
 {
-    printf("X: %X, Y: %X, A: %X\n",X, Y, A);
+    printf("X: %X, Y: %X, A: %X\n PC:%X\n",X, Y, A,PC);
 }
 
 
 //**ADDRESSING MODES BELOW**/
 
-uint8_t CPU::IMM()
+uint8_t CPU::IMM()  //Next byte is the operand
 {
     operand=ram->read(PC);
+    absolute_address=PC;
     PC++;
     cycles--;
 }
 
-uint8_t CPU::ZPX()
+uint8_t CPU::IMP()  //do nothing. address is implied in the function call
 {
     return 0;
 }
 
-uint8_t CPU::REL()
+uint8_t CPU::REL()  //operand is the address the PC will jump to. Double check this. 
 {
-    return 0;
+    //rel addressing is only used in branch operations
+    int8_t distance=ram->read(PC);  //distance from pc 
+    operand=PC+distance;
+    absolute_address=PC+distance;   //branch absolute address
+    PC++;
+    cycles--;
 }
 
-uint8_t CPU::ABX()
+uint8_t CPU::ABS()  //specifies memory location explicilty over next 2 bytes
 {
-    return 0;
-}
 
-uint8_t CPU::IND()
-{
-    return 0;
-}
-
-uint8_t CPU::IZY()
-{
-    return 0;
-}
-
-uint8_t CPU::IMP()
-{
-    return 0;
-}
-
-uint8_t CPU::ZP0()
-{
-    return 0;
-}
-
-
-
-uint8_t CPU::ZPY()
-{
-    return 0;
-}
-
-uint8_t CPU::ABS()
-{
-    return 0;
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+    operand=ram->read(absolute_address);
 }
 
 
 uint8_t CPU::ABY()
 {
-    return 0;
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+
+    operand=ram->read(absolute_address+Y);
 }
 
-uint8_t CPU::IZX()
+uint8_t CPU::ABX()
 {
-    return 0;
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+
+    operand=ram->read(absolute_address+X);
 }
 
 
 
-/**OPERTAIONS BELOW**/
 
-uint8_t CPU::LDA()
+
+uint8_t CPU::ZP0()  //same as absolute addressing but only for first 256 bytes
+                    //Hence there is no need for uppper and lower half, address is only 0xHH
+{   
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    operand=ram->read(absolute_address);
+}
+
+uint8_t CPU::ZPX()
 {
-    A=operand;
-    SetFlag(Z,(operand==0));
-    SetFlag(N,!(operand&10000000==0));
-    return 0;
+    absolute_address=(ram->read(PC)+X)&0xFF; //read address, add X, remove carry (similar to mod function)
+    
+    PC++;
+    cycles--;
+    operand=ram->read(absolute_address);
 }
+
+uint8_t CPU::ZPY()  //adds Y register to absolute address in zero page. Result will always wrap around
+{
+    absolute_address=(ram->read(PC)+Y)&0xFF; //read address, add Y, remove carry (similar to mod function)
+    PC++;
+    cycles--;
+    operand=ram->read(absolute_address);
+
+}
+
+
+
+
+uint8_t CPU::IND() //like absolute, but the address stores a pointer, not a literal
+{//only used in jump operations
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+    operand=absolute_address;
+
+}
+
+uint8_t CPU::IZY()
+{
+    //IZY gets pointer from PC and adds X to it. 
+    absolute_address=ram->read(PC);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+    operand=absolute_address+Y;
+}
+
+uint8_t CPU::IZX()  //gets address pointed to by memory and adds X to it. 
+{
+    //IZX gets pointer from PC+X
+    absolute_address=ram->read(PC+X);
+    PC++;
+    cycles--;
+    absolute_address+=ram->read(PC+X+1)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    PC++;
+    cycles--;
+    operand=absolute_address;
+}
+
 

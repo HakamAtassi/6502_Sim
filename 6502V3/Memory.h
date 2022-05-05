@@ -2,7 +2,7 @@
 #define MEMORY_H_
 
 #include <array>
-
+#include <cstdint>
 class Memory
 {
 

@@ -15,6 +15,7 @@ class CPU
     uint8_t fetched;     //current fetched cycle. AKA the instruction currently being executed
     uint16_t PC;   //16 bit long PC (same size as an address)
     uint8_t stackptr;
+    uint16_t absolute_address=0x0;
 
     //"Main" registers
     uint8_t X; //X reg
@@ -24,7 +25,7 @@ class CPU
 
     //helper members
     int cycles=0;
-    uint8_t operand;
+    int operand=0;
     std::string current_opcode;
 
 
