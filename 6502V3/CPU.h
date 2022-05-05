@@ -41,7 +41,7 @@ class CPU
 		N=(1<<7), //Negative  
     };
 
-    uint8_t GetFlag(STATUS S, int value); //returns a specific bit from the status register 
+    uint8_t GetFlag(STATUS S); //returns a specific bit from the status register 
     void SetFlag(STATUS S, int value); //sets/resets a specific bit from the status register 
 
 

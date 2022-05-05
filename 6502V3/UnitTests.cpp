@@ -99,8 +99,7 @@ void LDA_Xind_ABS()
     a.write(0xFFF4,0xFF);
     a.write(0xFFFA,0x05);
 
-
-    a.dumpData();
+    //a.dumpData();
     //printf("%X\n",a.read(0xFFFD));
     a.execute();
     a.execute();    //execute 2 opcodes
@@ -110,6 +109,47 @@ void LDA_Xind_ABS()
 
 }
 
+void LDY_POS_NO_OVERFLOW() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF);   //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0xA0);
+    a.write(0xFFF1,0x05); 
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    std::cout<<"Expected: X: 0, Y: 5 , A: 0"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+void LDA_Yind_ABS() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF);   //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0xA0);   //loads 5 into X reg
+    a.write(0xFFF1,0x05); 
+
+    a.write(0xFFF2,0xB9);   //LDA X abs
+    a.write(0xFFF3,0xF5);
+    a.write(0xFFF4,0xFF);
+    a.write(0xFFFA,0x05);
+
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();    //execute 2 opcodes
+    std::cout<<"Expected: X: 0, Y: 5 , A: 5"<<"\nActual: ";
+    a.dumpRegisters();
+}
 
 
 
@@ -124,6 +164,9 @@ int main()
     LDX_POS_NO_OVERFLOW();
     std::cout<<"====\n";
     LDA_Xind_ABS();
-
-
+    std::cout<<"====\n";
+    LDY_POS_NO_OVERFLOW();
+    std::cout<<"====\n";
+    LDA_Yind_ABS();
+    std::cout<<"====\n";
 }
