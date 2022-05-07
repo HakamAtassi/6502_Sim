@@ -12,7 +12,7 @@ class CPU
     
 
     uint8_t status;    //8 bit container for status register of the cpu. 
-    uint8_t fetched;     //current fetched cycle. AKA the instruction currently being executed
+    uint8_t fetched;     //current fetched cycle. AKA the instruction currently being executed in hex
     uint16_t PC;   //16 bit long PC (same size as an address)
     uint8_t stackptr;
     uint16_t absolute_address=0x0;
@@ -25,7 +25,8 @@ class CPU
 
     //helper members
     int cycles=0;
-    int operand=0;
+    //int operand=0;	//operand is the actual value at the final destination address.
+    			//This is too confusing. should probably just get rid of it.
     std::string current_opcode;
 
 

@@ -6,24 +6,29 @@
 /**OPERTAIONS BELOW**/
 
 
-uint8_t CPU::LDA()
+uint8_t CPU::LDA() 
 {
-    A=operand;
-    SetFlag(Z,(operand==0));
-    SetFlag(N,!(operand&10000000==0));
-    return 0;
+
+		
+		uint8_t operand=ram->read(absolute_address);
+		A=operand;
+		SetFlag(Z,(operand==0));
+		SetFlag(N,!((operand&0x80)==0));
+		return 0;
 }
 
 uint8_t CPU::ADC()
 {
     return 0;
-}; 
+};
 uint8_t CPU::AND()
 {
-    A=A&operand; 
-    SetFlag(N,(A&0x10000000>0)); 
-    SetFlag(Z,(A&0x11111111==0)); 
-    return 0;
+
+		uint8_t operand=ram->read(absolute_address);
+		A=A&operand;
+		SetFlag(N,((A&0x80)>0)); 
+		SetFlag(Z,(A==0)); 
+		return 0;
 }; 
 uint8_t CPU::ASL()  //double check this. Also double check that absolute_address value is being maintained correctly. 
 {
@@ -62,7 +67,7 @@ uint8_t CPU::BEQ()  //branch if zero
         PC=absolute_address;    //branching means setting the absolute address
     }
     return 0;
-}; 
+};
 
 uint8_t CPU::BNE()
 {
@@ -131,25 +136,31 @@ uint8_t CPU::CLV()
 
 uint8_t CPU::CMP()  //sets flags as if a subtration took place. 
 {
-    //do a subtraction and store it in temp. set flags according to temp
-	uint16_t temp=A-operand;
-	SetFlag(C,A>=operand);
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+
+		//do a subtraction and store it in temp. set flags according to temp
+		uint16_t operand=ram->read(absolute_address);
+		uint16_t temp=A-operand;
+		SetFlag(C,A>=operand);
+		SetFlag(Z,(temp & 0x00FF)==0x0000);
+		SetFlag(N,temp & 0x0080);
 }; 
 uint8_t CPU::CPX()
 {
-    uint16_t temp=X-operand;
-	SetFlag(C,X>=operand);
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+    
+		uint16_t operand=ram->read(absolute_address);
+		uint16_t temp=X-operand;
+		SetFlag(C,X>=operand);
+		SetFlag(Z,(temp & 0x00FF)==0x0000);
+		SetFlag(N,temp & 0x0080);
 }; 
 uint8_t CPU::CPY()
 {
-    uint16_t temp=Y-operand;
-	SetFlag(C,Y>=operand);
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+
+		uint16_t operand=ram->read(absolute_address);
+		uint16_t temp=Y-operand;
+		SetFlag(C,Y>=operand);
+		SetFlag(Z,(temp & 0x00FF)==0x0000);
+		SetFlag(N,temp & 0x0080);
 };
 uint8_t CPU::DEC() //decrement
 {
@@ -174,10 +185,12 @@ uint8_t CPU::DEY()
 }; 
 uint8_t CPU::EOR()  //exclusive or of operand and accumulator
 {
-    A=A^operand;
-    SetFlag(Z, A == 0x00);
-	SetFlag(N, A & 0x80); //and with 1000 0000. if negative it will return non 0. 
-    return 0;
+		
+		uint16_t operand=ram->read(absolute_address);
+		A=A^operand;
+		SetFlag(Z, A == 0x00);
+		SetFlag(N, A & 0x80); //and with 1000 0000. if negative it will return non 0. 
+		return 0;
 };
 
 uint8_t CPU::INC() //increment memory location
@@ -213,18 +226,22 @@ uint8_t CPU::JSR() //jump to sub routine
 
 uint8_t CPU::LDX()  //load into register X
 {
-    X=operand;
-    SetFlag(Z,(operand==0));
-    SetFlag(N,!(operand&10000000==0));
-    return 0;
+
+		uint16_t operand=ram->read(absolute_address);
+		X=operand;
+		SetFlag(Z,(operand==0));
+		SetFlag(N,!(operand&10000000==0));
+		return 0;
 }; 
 
 uint8_t CPU::LDY()
 {
-    Y=operand;
-    SetFlag(Z,(operand==0));
-    SetFlag(N,!(operand&10000000==0));
-    return 0;
+
+		uint16_t operand=ram->read(absolute_address);
+		Y=operand;
+		SetFlag(Z,(operand==0));
+		SetFlag(N,!(operand&10000000==0));
+		return 0;
 };
 
 uint8_t CPU::LSR()
@@ -237,9 +254,11 @@ uint8_t CPU::NOP() //no operation
 }; 
 uint8_t CPU::ORA()  //bitwise or with accum.
 {
-    A=A | operand;
-    SetFlag(Z,(A==0));
-    SetFlag(N,!(A&10000000==0));
+
+		uint16_t operand=ram->read(absolute_address);
+		A=A | operand;
+		SetFlag(Z,(A==0));
+		SetFlag(N,!(A&10000000==0));
 };
 uint8_t CPU::PHA()  //push accum to stack
 {
@@ -475,7 +494,7 @@ void CPU::dumpRegisters()
 
 uint8_t CPU::IMM()  //Next byte is the operand
 {
-    operand=ram->read(PC);
+    //operand=ram->read(PC);
     absolute_address=PC;
     PC++;
     cycles--;
@@ -488,12 +507,14 @@ uint8_t CPU::IMP()  //do nothing. address is implied in the function call
 
 uint8_t CPU::REL()  //operand is the address the PC will jump to. Double check this. 
 {
-    //rel addressing is only used in branch operations
-    int8_t distance=ram->read(PC);  //distance from pc 
-    operand=PC+distance;
-    absolute_address=PC+distance;   //branch absolute address
-    PC++;
-    cycles--;
+	//the read number could be negative. might cause a bug. 
+     //Next address is PC offset.
+    //rel addressing is only used in branch operation.
+	uint16_t temp=ram->read(PC); //read the distance
+	absolute_address=PC+temp*((-1)*(temp&0x80)==0x80);   //branch absolute address. also needs to check if address is backwards (negative)
+	PC++;
+	cycles--;
+	return 0;
 }
 
 uint8_t CPU::ABS()  //specifies memory location explicilty over next 2 bytes
@@ -502,23 +523,26 @@ uint8_t CPU::ABS()  //specifies memory location explicilty over next 2 bytes
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    absolute_address|=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
     PC++;
     cycles--;
-    operand=ram->read(absolute_address);
 }
 
 
 uint8_t CPU::ABY()
 {
+
+	//just adds Y or X to the absolute address read.
+	//address is 16 bits, not 8, hence the 2 step process. 
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    absolute_address|=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    absolute_address+=Y;
     PC++;
     cycles--;
 
-    operand=ram->read(absolute_address+Y);
+    //operand=ram->read(absolute_address+Y);
 }
 
 uint8_t CPU::ABX()
@@ -526,11 +550,12 @@ uint8_t CPU::ABX()
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    absolute_address|=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+    absolute_address+=X;
     PC++;
     cycles--;
 
-    operand=ram->read(absolute_address+X);
+ //   operand=ram->read(absolute_address+X);
 }
 
 
@@ -543,28 +568,22 @@ uint8_t CPU::ZP0()  //same as absolute addressing but only for first 256 bytes
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    operand=ram->read(absolute_address);
+    absolute_address&=0x00FF;	//address must be in the first page or else it will wrap around
 }
 
 uint8_t CPU::ZPX()
 {
-    absolute_address=(ram->read(PC)+X)&0xFF; //read address, add X, remove carry (similar to mod function)
-    
+    absolute_address=(ram->read(PC)+X)&0x00FF; //read address, add X, remove carry (similar to mod function)
     PC++;
     cycles--;
-    operand=ram->read(absolute_address);
 }
 
 uint8_t CPU::ZPY()  //adds Y register to absolute address in zero page. Result will always wrap around
 {
-    absolute_address=(ram->read(PC)+Y)&0xFF; //read address, add Y, remove carry (similar to mod function)
+    absolute_address=(ram->read(PC)+Y)&0x00FF; //read address, add Y, remove carry (similar to mod function)
     PC++;
     cycles--;
-    operand=ram->read(absolute_address);
-
 }
-
-
 
 
 uint8_t CPU::IND() //like absolute, but the address stores a pointer, not a literal
@@ -572,41 +591,39 @@ uint8_t CPU::IND() //like absolute, but the address stores a pointer, not a lite
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
+
+    absolute_address|=ram->read(PC)<<8;
     PC++;
     cycles--;
-    operand=absolute_address;
 
+    absolute_address=ram->read(absolute_address)|ram->read(absolute_address+1);
+    //read the address to get the actual address of the operand
 }
 
-uint8_t CPU::IZY()
+uint8_t CPU::IZY() //"an 8 bit address identifies a pointer. get that pointer and add y to its value.
 {
-    //IZY gets pointer from PC and adds X to it. 
     absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
-    PC++;
-    cycles--;
-    operand=absolute_address+Y;
+
+	absolute_address=ram->read(absolute_address)|ram->read(absolute_address+1)<<8;
+
+	absolute_address+=Y;
+
 }
 
 uint8_t CPU::IZX()  //gets address pointed to by memory and adds X to it. 
 {
     //IZX gets pointer from PC+X
-    absolute_address=ram->read(PC+X);
+    absolute_address=ram->read(PC);
     PC++;
     cycles--;
-    absolute_address+=ram->read(PC+X+1)<<8;  //to bit shift in hex, each position is 4 single binary shifts
-    PC++;
-    cycles--;
-    operand=absolute_address;
+
+    absolute_address=ram->read(absolute_address+X)|ram->read(absolute_address+X+1)<<8;
 }
 
 
-//////
-
 uint8_t CPU::GetFlag(STATUS S)
 {
-    return(status&S>0);
+    return((status&S)>0);
 }
