@@ -17,8 +17,24 @@ uint8_t CPU::LDA()
 		return 0;
 }
 
-uint8_t CPU::ADC()
+uint8_t CPU::ADC()  //add memory to accumulator with carry
 {
+    uint16_t temp= (uint16_t)A+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds two numbers and potential flag from previous addition
+	SetFlag(C,temp>255);
+	//carry is set if c is greater than 255
+	SetFlag(Z,(temp & 0x00FF)==0);
+	//zero is set if its zero
+	
+	SetFlag(N,temp & 0x80);
+	//negative is set if msb of temp (result) is 1
+
+	SetFlag(V,(~((uint16_t)A ^ (uint16_t)fetched) & ((uint16_t)A ^ (uint16_t)temp))& 0x0080); //this is the logic that determines the state of the overflow flag previously mentioned
+	//overflow is not the same as carry. 
+	//Overflow is is related to the sign bit. A carry is just a carry (>|255|)
+	
+	A=temp&0x00FF;
+
+
     return 0;
 };
 uint8_t CPU::AND()
@@ -33,15 +49,20 @@ uint8_t CPU::AND()
 uint8_t CPU::ASL()  //double check this. Also double check that absolute_address value is being maintained correctly. 
 {
 
-    if(lookup[fetched].addressing_mode==&CPU::IMP) //if addressing mode is implied then act on accumulator
-    {
-        A=A<<1;
-    }
-    else
-    {
-        write(absolute_address,ram->read(absolute_address)<<1);
-    }
-    return 0;
+		uint8_t operand=ram->read(absolute_address);
+		operand=operand<<1;
+		SetFlag(N,((operand&0x80)>0)); 
+		SetFlag(Z,(operand==0)); 
+		SetFlag(C,(ram->read(absolute_address)&0x80)>0); //if value before shift is negative, there will be a carry 
+		if(lookup[fetched].addressing_mode==&CPU::IMP) //if addressing mode is implied then act on accumulator
+		{
+				A=operand;
+		}
+		else
+		{
+				write(absolute_address,operand);
+		}
+		return 0;
 }; 
 uint8_t CPU::BCC()  //branch if carry clear
 {
@@ -77,8 +98,14 @@ uint8_t CPU::BNE()
     }
     return 0;
 }; 
-uint8_t CPU::BIT()
-{}; 
+uint8_t CPU::BIT() 
+{
+    uint16_t temp = A & fetched;
+	SetFlag(Z, (temp & 0x00FF) == 0x00);
+	SetFlag(N, fetched & (1 << 7));
+	SetFlag(V, fetched & (1 << 6));
+	return 0;
+}; 
 uint8_t CPU::BMI()
 {
     if(GetFlag(N)==1)
@@ -95,7 +122,24 @@ uint8_t CPU::BPL()
     }
     return 0;
 }; 
-uint8_t CPU::BRK(){}; 
+uint8_t CPU::BRK() //causes a nonMaskableInterrupt 
+{
+	PC++;
+
+	SetFlag(I,1);
+	write(0x0100+stackptr,(PC>>8) & 0x00FF);
+	stackptr--; 
+	write(0x0100 +stackptr,PC & 0x00FF);
+	SetFlag(B,1);
+	write(0x0100 + stackptr, status);
+	stackptr--;
+    //save current state to stack
+	SetFlag(B,0);
+
+	PC=(uint16_t)read(0xFFEE) | ((uint16_t)read(0xFFFF)<<8);
+	return 0;
+
+}; 
 
 uint8_t CPU::BVC() //branch overflow clear
 {
@@ -136,13 +180,13 @@ uint8_t CPU::CLV()
 
 uint8_t CPU::CMP()  //sets flags as if a subtration took place. 
 {
-
 		//do a subtraction and store it in temp. set flags according to temp
 		uint16_t operand=ram->read(absolute_address);
 		uint16_t temp=A-operand;
 		SetFlag(C,A>=operand);
 		SetFlag(Z,(temp & 0x00FF)==0x0000);
 		SetFlag(N,temp & 0x0080);
+		return 0;
 }; 
 uint8_t CPU::CPX()
 {
@@ -152,6 +196,7 @@ uint8_t CPU::CPX()
 		SetFlag(C,X>=operand);
 		SetFlag(Z,(temp & 0x00FF)==0x0000);
 		SetFlag(N,temp & 0x0080);
+		return 0;
 }; 
 uint8_t CPU::CPY()
 {
@@ -161,58 +206,65 @@ uint8_t CPU::CPY()
 		SetFlag(C,Y>=operand);
 		SetFlag(Z,(temp & 0x00FF)==0x0000);
 		SetFlag(N,temp & 0x0080);
+		return 0;
 };
 uint8_t CPU::DEC() //decrement
 {
     uint16_t temp=ram->read(absolute_address)-1;
-    ram->write(absolute_address,temp);
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+    ram->write(absolute_address,temp&0x00FF);
+	SetFlag(Z,(temp&0x00FF)==0);
+	SetFlag(N,temp & 0x80);
+	return 0;
 }; 
 uint8_t CPU::DEX()
 {
     uint16_t temp=X-1;
     X=temp;
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+	SetFlag(Z,X==0);
+	SetFlag(N,temp & 0x80);
+	return 0;
 }; 
 uint8_t CPU::DEY()
 {
     uint16_t temp=Y-1;
     Y=temp;
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
-	SetFlag(N,temp & 0x0080);
+	SetFlag(Z,Y==0);
+	SetFlag(N,temp & 0x80);
+	return 0;
 }; 
 uint8_t CPU::EOR()  //exclusive or of operand and accumulator
 {
-		
 		uint16_t operand=ram->read(absolute_address);
 		A=A^operand;
-		SetFlag(Z, A == 0x00);
-		SetFlag(N, A & 0x80); //and with 1000 0000. if negative it will return non 0. 
-		return 0;
+	    SetFlag(Z,A==0x00);
+	    SetFlag(N,A & 0x0080);
+        return 0;
 };
 
 uint8_t CPU::INC() //increment memory location
 {  
     uint16_t temp=ram->read(absolute_address)+1;
     ram->write(absolute_address,temp);
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
+    SetFlag(Z,(temp&0x00FF)==0x00);
 	SetFlag(N,temp & 0x0080);
+    return 0;
 }; 
 uint8_t CPU::INX()
 {
-    uint16_t temp=X-1;
+    uint16_t temp=X+1;
     X=temp;
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
+	SetFlag(Z,(temp&0x00FF)==0x00);
 	SetFlag(N,temp & 0x0080);
+    return 0;
+
 }; 
 uint8_t CPU::INY()
 {
-    uint16_t temp=Y-1;
+    uint16_t temp=Y+1;
     Y=temp;
-	SetFlag(Z,(temp & 0x00FF)==0x0000);
+	SetFlag(Z,(temp&0x00FF)==0x00);
 	SetFlag(N,temp & 0x0080);
+    return 0;
 }; 
 uint8_t CPU::JMP()
 {
@@ -220,8 +272,24 @@ uint8_t CPU::JMP()
     return 0;
 };
 uint8_t CPU::JSR() //jump to sub routine
+		//NOTE 6502 uses a desending stack. 
+		//starts at address 0x01FF and decrements from there
+		//first element is stored 0x01FF and pointer moves to next available address
 {
+		//PC would normally point to NEXT instruction to be exectuted. 
+		//but we want to store the return address, which is the last byte of the JSR instruction. 
+	PC--;
+	write(0x0100 + stackptr, (PC >> 8) & 0x00FF);
+	stackptr--;
+	write(0x0100 + stackptr, PC & 0x00FF);
+	//PUSH both halves of the address to ram
+	//Remember the 6502 is little Endian
+	stackptr--;
+	PC = absolute_address;
+	//jump
+    
 
+    return 0;
 }; 
 
 uint8_t CPU::LDX()  //load into register X
@@ -230,7 +298,7 @@ uint8_t CPU::LDX()  //load into register X
 		uint16_t operand=ram->read(absolute_address);
 		X=operand;
 		SetFlag(Z,(operand==0));
-		SetFlag(N,!(operand&10000000==0));
+		SetFlag(N,operand&0x80);
 		return 0;
 }; 
 
@@ -240,13 +308,27 @@ uint8_t CPU::LDY()
 		uint16_t operand=ram->read(absolute_address);
 		Y=operand;
 		SetFlag(Z,(operand==0));
-		SetFlag(N,!(operand&10000000==0));
+		SetFlag(N,operand&0x80);
 		return 0;
 };
 
 uint8_t CPU::LSR()
 {
+		uint16_t temp=ram->read(absolute_address);
+		SetFlag(C,temp&0x1);
+		temp=temp>>1;
+		if(CPU::lookup[fetched].addressing_mode==&CPU::IMP)
+		{
+				A=(temp&0x00FF);
+		}
+		else
+		{
+				ram->write(absolute_address,temp&0x00FF);
+		}
 
+		SetFlag(N,0); //by nature of right shift this will always be true
+		SetFlag(Z,(temp&0x00FF)==0);
+		return 0;
 }; 
 uint8_t CPU::NOP() //no operation
 {
@@ -255,94 +337,189 @@ uint8_t CPU::NOP() //no operation
 uint8_t CPU::ORA()  //bitwise or with accum.
 {
 
-		uint16_t operand=ram->read(absolute_address);
+		uint8_t operand=ram->read(absolute_address);
 		A=A | operand;
-		SetFlag(Z,(A==0));
-		SetFlag(N,!(A&10000000==0));
+		SetFlag(Z,(A==0x00));
+		SetFlag(N,A&0x80);
+		return 0;
 };
 uint8_t CPU::PHA()  //push accum to stack
 {
-
+		ram->write(0x0100+stackptr,A);
+		stackptr--;//stack memory decrements and points to next available position
+		return 0;
 };
 uint8_t CPU::PHP()  //push processor status
 {
+//The status register will be pushed with the break flag and bit 5 set to 1. 
+		ram->write(0x100+stackptr,status | B | U);
+		SetFlag(B,0);
+		SetFlag(U,0);
+		stackptr--;
+		return 0;
 
 }; 
 uint8_t CPU::PLA() //pull accum 
 {
-
+		stackptr++;
+		A=ram->read(0x100+stackptr);
+		SetFlag(N,A&0x80);
+		SetFlag(Z,A==0);
+		return 0;
 }; 
 uint8_t CPU::PLP() //pull processor status
 {
-
+    stackptr++;
+	status = read(0x0100 + stackptr);
+	SetFlag(U, 1);
+	return 0;
 }; 
 
 uint8_t CPU::TSX() //Transfer stack ptr to x
 {
-
+    X = stackptr;
+	SetFlag(Z, X == 0x00);
+	SetFlag(N, X & 0x80);
+	return 0;
 }; 
 uint8_t CPU::TXS() //Transfer x to stack ptr
 {
-
+	stackptr = X;
+	return 0;
 };
 
 
 uint8_t CPU::ROL() //ROL shifts all bits left one position. The Carry is shifted into bit 0 and the original bit 7 is shifted into the Carry.
 {
+		
+	if(CPU::lookup[fetched].addressing_mode==&CPU::IMP) //if implied act on accumulator
+    {
+				SetFlag(C,A&0x80);
+				SetFlag(N,A&0x40);
+				A=(GetFlag(C)|A<<1)&0xFF;    
+				SetFlag(Z,A==0x0);
+	}
+    else
+    {
+
+				uint8_t operand=ram->read(absolute_address);
+				SetFlag(C,operand&0x80);
+				SetFlag(N,operand&0x40);
+				uint8_t final_val=(GetFlag(C)|A<<1)&0xFF;
+		     	ram->write(absolute_address,final_val);
+				SetFlag(Z,final_val==0x0);
+    }
+	return 0;
+		
 
 };
 
 uint8_t CPU::ROR() //ROR shifts all bits right one position. The Carry is shifted into bit 7 and the original bit 0 is shifted into the Carry.
 {
-
+	if(CPU::lookup[fetched].addressing_mode==&CPU::IMP) //if implied act on accumulator
+    {
+				SetFlag(C,A&0x1);
+				SetFlag(N,GetFlag(C));
+				A=(GetFlag(C)<<7|A>>1)&0xFF;    
+				SetFlag(Z,A==0x0);
+	}
+    else
+    {		
+				uint8_t operand=ram->read(absolute_address);
+				SetFlag(C,operand&0x1);
+				SetFlag(N,GetFlag(C));
+				uint8_t final_val=(GetFlag(C)<<7|A>>1)&0xFF;
+		     	ram->write(absolute_address,final_val);
+				SetFlag(Z,final_val==0x0);
+    }
+	return 0;
 }; 
-uint8_t CPU::RTI()
+uint8_t CPU::RTI() //return from interrupt
+		//RTI retrieves the Processor Status Word (flags) and the Program Counter from the stack in that order 
+		//(interrupts push the PC first and then the PSW).
 {
+	stackptr++;
+	status = read(0x0100 + stackptr);
+	status &= ~B;
+	status &= ~U;
 
+	stackptr++;
+	PC = (uint16_t)read(0x0100 + stackptr);
+	stackptr++;
+	PC |= (uint16_t)read(0x0100 + stackptr) << 8;
+	return 0;
 }; 
 uint8_t CPU::RTS()
+//RTS pulls the top two bytes off the stack (low byte first) and transfers program control to that address+1.
+//It is used, as expected, to exit a subroutine invoked via JSR which pushed the address-1.
 {
-
+		uint16_t _PC=ram->read(0x100+ stackptr);
+		stackptr++;
+		_PC|=ram->read(0x100+stackptr)<<8;
+		stackptr++;
+		PC=_PC;
+		PC++;
+		return 0;
 }; 
 uint8_t CPU::SBC()
 {
+	//subtraction can be implemented very similarly to addition
+	//A=A-M-(1-C). 1-C is the borrow bit
+	//A=A+-M+1+C
+	uint16_t value=((uint16_t)fetched) ^ 0x00FF;
 
+	uint16_t temp= (uint16_t)A+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds
+	SetFlag(C,temp>255);
+	SetFlag(Z,(temp & 0x00FF)==0);
+	SetFlag(N,temp & 0x80);
+	SetFlag(V,(~((uint16_t)A ^ (uint16_t)fetched) & ((uint16_t)A^ (uint16_t)temp))& 0x0080); 
+	return 1;
 };
 uint8_t CPU::SEC()
 {
-
+		SetFlag(C,1);
+		return 0;
 }; 
 uint8_t CPU::SED()
 {
 
+		SetFlag(D,1);
+		return 0;
 }; 
 uint8_t CPU::SEI()
 {
 
+		SetFlag(I,1);
+		return 0;
 }; 
 uint8_t CPU::STA() //store accum in memory
 {
     write(absolute_address,A);
+	return 0;
 };
 uint8_t CPU::STX()
 {
     write(absolute_address,X);
+	return 0;
 }; 
 uint8_t CPU::STY()
 {
     write(absolute_address,Y);
+	return 0;
 }; 
 uint8_t CPU::TAX() //transfer accum to X
 {
     X=A;
     SetFlag(N,(X&0x80)>0);
     SetFlag(Z,(X==0));
+	return 0;
 }; 
 uint8_t CPU::TAY()
 {
     Y=A;
     SetFlag(N,(Y&0x80)>0);
     SetFlag(Z,(Y==0));
+	return 0;
 };
 
 uint8_t CPU::TXA()  //transfer X to accum
@@ -350,6 +527,7 @@ uint8_t CPU::TXA()  //transfer X to accum
     A=X;
     SetFlag(N,(A&0x80)>0);
     SetFlag(Z,(A==0));
+	return 0;
 }; 
 
 uint8_t CPU::TYA()
@@ -357,10 +535,13 @@ uint8_t CPU::TYA()
     A=Y;
     SetFlag(N,(Y&0x80)>0);
     SetFlag(Z,(Y==0));
+    return 0;
 };
 uint8_t CPU::XXX()
 {
-
+		return 0;
+		//illegal opcodes techincal all perform a certain function, but that tend to introduce errors
+		////this implementation will ignore illegal opcodes. 
 }; //illegal Opcodes
 
 
@@ -418,7 +599,7 @@ void CPU::SetFlag(STATUS S, int value)
 
 void CPU::reset()
 {
-
+//TODO add init for stack pointer
     for(int i=0; i<64*1024;i++)
     {
         if(i!=0xFFFC && i!=0xFFFD)  //dont reset part of memory that stores where the program starts
