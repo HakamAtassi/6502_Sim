@@ -150,8 +150,141 @@ void LDA_Yind_ABS()
     std::cout<<"Expected: X: 0, Y: 5 , A: 5"<<"\nActual: ";
     a.dumpRegisters();
 }
+void ADD_IMP_To_Empty() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
 
 
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    std::cout<<"Expected: X: 0, Y: 0, A: 5"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+
+void ADD_IMP_TWICE() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
+    //a.dumpData();
+    a.write(0xFFF2,0x69);   //add 5 to accum
+    a.write(0xFFF3,0x05); 
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();    
+    std::cout<<"Expected: X: 0, Y: 0, A: A"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+
+void ADC_TWICE_WITH_JMP() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
+    //a.dumpData();
+    a.write(0xFFF2,0x4C);   //jump to 0xFFF0
+    a.write(0xFFF3,0xF0);
+    a.write(0xFFF4,0xFF); 
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();    //add 5 the first time
+    a.execute();    //jump back to add 5
+    a.execute();    //do the initial add 5 operation
+    std::cout<<"Expected: X: 0, Y: 0, A: A"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+void BNE_TEST() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
+    //a.dumpData();
+    a.write(0xFFF2,0xE9);   //Subtract 5 from accum
+    a.write(0xFFF3,0x05);
+
+
+    a.write(0xFFF4,0xD0);   //BNE
+    a.write(0xFFF5,0x05);
+
+
+    a.write(0xFFFA,0xA9);   //load F into A if branched 
+    a.write(0xFFFB,0x0F);
+
+    a.write(0xFFF6,0xA9);   //if not branched, do this instead,
+    a.write(0xFFF7,0x01);
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();
+    a.execute();
+    a.execute();
+
+    std::cout<<"Expected: X: 0, Y: 0, A: 1"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+void BEQ_TEST() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+    //a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
+    //a.dumpData();
+    a.write(0xFFF2,0xE9);   //Subtract 5 from accum
+    a.write(0xFFF3,0x05);
+
+
+    a.write(0xFFF4,0xF0);   //BNE
+    a.write(0xFFF5,0x05);
+
+    a.write(0xFFFA,0xA9);   //load F into A
+    a.write(0xFFFB,0x0F);
+
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();
+    a.execute();
+    a.execute();
+
+    std::cout<<"Expected: X: 0, Y: 0, A: F"<<"\nActual: ";
+    a.dumpRegisters();
+}
 
 int main()
 {
@@ -169,4 +302,13 @@ int main()
     std::cout<<"====\n";
     LDA_Yind_ABS();
     std::cout<<"====\n";
+    ADD_IMP_To_Empty();
+    std::cout<<"====\n";
+    ADD_IMP_TWICE();
+    std::cout<<"====\n";
+    ADC_TWICE_WITH_JMP();
+    std::cout<<"====\n";
+    BNE_TEST(); 
+    std::cout<<"====\n";
+    BEQ_TEST(); 
 }

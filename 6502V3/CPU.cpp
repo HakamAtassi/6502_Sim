@@ -19,7 +19,7 @@ uint8_t CPU::LDA()
 
 uint8_t CPU::ADC()  //add memory to accumulator with carry
 {
-    uint16_t temp= (uint16_t)A+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds two numbers and potential flag from previous addition
+    uint16_t temp= (uint16_t)A+(uint16_t)ram->read(absolute_address) + (uint16_t)GetFlag(C); //adds two numbers and potential flag from previous addition
 	SetFlag(C,temp>255);
 	//carry is set if c is greater than 255
 	SetFlag(Z,(temp & 0x00FF)==0);
@@ -28,7 +28,7 @@ uint8_t CPU::ADC()  //add memory to accumulator with carry
 	SetFlag(N,temp & 0x80);
 	//negative is set if msb of temp (result) is 1
 
-	SetFlag(V,(~((uint16_t)A ^ (uint16_t)fetched) & ((uint16_t)A ^ (uint16_t)temp))& 0x0080); //this is the logic that determines the state of the overflow flag previously mentioned
+	SetFlag(V,(~((uint16_t)A ^ (uint16_t)ram->read(absolute_address)) & ((uint16_t)A ^ (uint16_t)temp))& 0x0080); //this is the logic that determines the state of the overflow flag previously mentioned
 	//overflow is not the same as carry. 
 	//Overflow is is related to the sign bit. A carry is just a carry (>|255|)
 	
@@ -85,7 +85,7 @@ uint8_t CPU::BEQ()  //branch if zero
 {
         if(GetFlag(Z)==1)
     {
-        PC=absolute_address;    //branching means setting the absolute address
+        PC=absolute_address+ram->read(absolute_address);    //branching means setting the absolute address
     }
     return 0;
 };
@@ -94,7 +94,7 @@ uint8_t CPU::BNE()
 {
     if(GetFlag(Z)==0)
     {
-        PC=absolute_address;    //branching means setting the absolute address
+        PC=absolute_address+ram->read(absolute_address);    //branching means setting the absolute address
     }
     return 0;
 }; 
@@ -466,13 +466,15 @@ uint8_t CPU::SBC()
 	//subtraction can be implemented very similarly to addition
 	//A=A-M-(1-C). 1-C is the borrow bit
 	//A=A+-M+1+C
-	uint16_t value=((uint16_t)fetched) ^ 0x00FF;
 
-	uint16_t temp= (uint16_t)A+(uint16_t)fetched + (uint16_t)GetFlag(C); //adds
-	SetFlag(C,temp>255);
-	SetFlag(Z,(temp & 0x00FF)==0);
-	SetFlag(N,temp & 0x80);
-	SetFlag(V,(~((uint16_t)A ^ (uint16_t)fetched) & ((uint16_t)A^ (uint16_t)temp))& 0x0080); 
+	uint16_t value = ((uint16_t)ram->read(absolute_address)) ^ 0x00FF;
+	uint16_t temp = (uint16_t)A + value + (uint16_t)GetFlag(C) +1;
+	SetFlag(C, temp & 0xFF00);
+	SetFlag(Z, ((temp & 0x00FF) == 0));
+	SetFlag(V, (temp ^ (uint16_t)A) & (temp ^ value) & 0x0080);
+	SetFlag(N, temp & 0x0080);
+	A = temp & 0x00FF;
+	
 	return 1;
 };
 uint8_t CPU::SEC()
@@ -599,7 +601,6 @@ void CPU::SetFlag(STATUS S, int value)
 
 void CPU::reset()
 {
-//TODO add init for stack pointer
     for(int i=0; i<64*1024;i++)
     {
         if(i!=0xFFFC && i!=0xFFFD)  //dont reset part of memory that stores where the program starts
@@ -608,7 +609,8 @@ void CPU::reset()
         }
     }
     PC= ram->read(0xFFFC)|ram->read(0xFFFD)<<8; //program starts at address in 0xFFFC (See C64 startup routine)
-    stackptr=(uint8_t)0x0100;    //stack pointer starts at 0x0100;
+    stackptr=(uint8_t)0x0FD;    //stack pointer starts at 0x0100;
+    
 
     SetFlag(C,0);   //reset all flags
     SetFlag(Z,0);
@@ -629,6 +631,7 @@ uint8_t CPU::fetch()
     cycles=lookup[fetched].cycles;
     PC++;
     cycles--;
+	return 0;
 }
 
 uint8_t CPU::getOperand()  
@@ -638,7 +641,7 @@ uint8_t CPU::getOperand()
 
     (this->*lookup[fetched].addressing_mode)();  //find the operand based on fetched instruction
     //store in helper variable for use in operation
-
+    return 0;
 
 }
 
@@ -668,6 +671,8 @@ void CPU::dumpData()
 void CPU::dumpRegisters()
 {
     printf("X: %X, Y: %X, A: %X\n PC:%X\n",X, Y, A,PC);
+	printf("Status register <CZIDBUVN>: %X\n", status);
+	
 }
 
 
@@ -679,6 +684,7 @@ uint8_t CPU::IMM()  //Next byte is the operand
     absolute_address=PC;
     PC++;
     cycles--;
+	return 0;
 }
 
 uint8_t CPU::IMP()  //do nothing. address is implied in the function call
@@ -707,6 +713,7 @@ uint8_t CPU::ABS()  //specifies memory location explicilty over next 2 bytes
     absolute_address|=ram->read(PC)<<8;  //to bit shift in hex, each position is 4 single binary shifts
     PC++;
     cycles--;
+	return 0;
 }
 
 
@@ -724,6 +731,7 @@ uint8_t CPU::ABY()
     cycles--;
 
     //operand=ram->read(absolute_address+Y);
+	return 0;
 }
 
 uint8_t CPU::ABX()
@@ -737,6 +745,7 @@ uint8_t CPU::ABX()
     cycles--;
 
  //   operand=ram->read(absolute_address+X);
+    return 0;
 }
 
 
@@ -750,6 +759,7 @@ uint8_t CPU::ZP0()  //same as absolute addressing but only for first 256 bytes
     PC++;
     cycles--;
     absolute_address&=0x00FF;	//address must be in the first page or else it will wrap around
+    return 0;
 }
 
 uint8_t CPU::ZPX()
@@ -757,6 +767,8 @@ uint8_t CPU::ZPX()
     absolute_address=(ram->read(PC)+X)&0x00FF; //read address, add X, remove carry (similar to mod function)
     PC++;
     cycles--;
+
+	return 0;
 }
 
 uint8_t CPU::ZPY()  //adds Y register to absolute address in zero page. Result will always wrap around
@@ -764,6 +776,7 @@ uint8_t CPU::ZPY()  //adds Y register to absolute address in zero page. Result w
     absolute_address=(ram->read(PC)+Y)&0x00FF; //read address, add Y, remove carry (similar to mod function)
     PC++;
     cycles--;
+    return 0;
 }
 
 
@@ -779,6 +792,7 @@ uint8_t CPU::IND() //like absolute, but the address stores a pointer, not a lite
 
     absolute_address=ram->read(absolute_address)|ram->read(absolute_address+1);
     //read the address to get the actual address of the operand
+    return 0;
 }
 
 uint8_t CPU::IZY() //"an 8 bit address identifies a pointer. get that pointer and add y to its value.
@@ -790,6 +804,7 @@ uint8_t CPU::IZY() //"an 8 bit address identifies a pointer. get that pointer an
 	absolute_address=ram->read(absolute_address)|ram->read(absolute_address+1)<<8;
 
 	absolute_address+=Y;
+	return 0;
 
 }
 
@@ -801,6 +816,7 @@ uint8_t CPU::IZX()  //gets address pointed to by memory and adds X to it.
     cycles--;
 
     absolute_address=ram->read(absolute_address+X)|ram->read(absolute_address+X+1)<<8;
+	return 0;
 }
 
 
