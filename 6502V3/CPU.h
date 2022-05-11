@@ -29,7 +29,7 @@ class CPU
     			//This is too confusing. should probably just get rid of it.
     std::string current_opcode;
 
-
+		public:
     enum STATUS //status registers 
     {
         C=(1<<0), //Carry bit
@@ -42,11 +42,13 @@ class CPU
 		N=(1<<7), //Negative  
     };
 
+
+
     uint8_t GetFlag(STATUS S); //returns a specific bit from the status register 
     void SetFlag(STATUS S, int value); //sets/resets a specific bit from the status register 
 
 
-public:
+
 
     uint8_t fetch();   //fetches instruction
     uint8_t getOperand();
@@ -104,6 +106,9 @@ public:
 
     void dumpData(); //dumps all microprocessor data
     void dumpRegisters();
-};
 
+
+
+	void dump_status_all();
+};
 #endif

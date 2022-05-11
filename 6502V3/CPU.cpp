@@ -405,7 +405,7 @@ uint8_t CPU::ROL() //ROL shifts all bits left one position. The Carry is shifted
 				uint8_t operand=ram->read(absolute_address);
 				SetFlag(C,operand&0x80);
 				SetFlag(N,operand&0x40);
-				uint8_t final_val=(GetFlag(C)|A<<1)&0xFF;
+				uint8_t final_val=(GetFlag(C)|operand<<1)&0xFF;
 		     	ram->write(absolute_address,final_val);
 				SetFlag(Z,final_val==0x0);
     }
@@ -671,8 +671,7 @@ void CPU::dumpData()
 void CPU::dumpRegisters()
 {
     printf("X: %X, Y: %X, A: %X\n PC:%X\n",X, Y, A,PC);
-	printf("Status register <CZIDBUVN>: %X\n", status);
-	
+	//printf("Status register <CZIDBUVN>: %X\n", status );
 }
 
 
@@ -824,3 +823,22 @@ uint8_t CPU::GetFlag(STATUS S)
 {
     return((status&S)>0);
 }
+
+
+
+void CPU::dump_status_all()
+{
+
+		printf("%d",GetFlag(CPU::C));
+		printf("%d",GetFlag(CPU::Z));
+		printf("%d",GetFlag(CPU::I));
+		printf("%d ",GetFlag(CPU::D));
+		printf("%d",GetFlag(CPU::B));
+		printf("%d",GetFlag(CPU::U));
+		printf("%d",GetFlag(CPU::V));
+		printf("%d\n",GetFlag(CPU::N));
+
+
+}
+
+

@@ -6,6 +6,9 @@
 #include <iostream>
 
 
+
+
+
 void LDA_ABS()
 {
     Memory ram;
@@ -286,6 +289,290 @@ void BEQ_TEST()
     a.dumpRegisters();
 }
 
+
+
+
+
+void ROL_IMP() 
+
+{
+    Memory ram;
+    CPU a(&ram);
+
+
+
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x05); 
+
+    //a.dumpData();
+    a.write(0xFFF2,0x2A);   //shift by 1
+    a.write(0xFFF3,0x0F); 
+    //a.dumpData();
+ 
+
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();
+    
+
+    std::cout<<"Expected: X: 0, Y: 0, A: A"<<"\nActual: ";
+    a.dumpRegisters();
+}
+
+
+
+void ROL_ABS() 
+
+{
+    Memory ram;
+    CPU a(&ram);
+
+
+
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+	a.reset();
+    a.write(0xFFFA,0x05);   //shift by 1
+
+    //a.dumpData();
+    a.write(0xFFF0,0x2E);   //shift by 1
+    a.write(0xFFF1,0xFA); 
+    a.write(0xFFF2,0xFF); 
+	//a.dumpData();
+
+
+
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+ 
+	a.execute();
+    std::cout<<"Expected at 0xFFFA: A\n";
+	printf("Actual at 0xFFFA: %X\n", ram.read(0xFFFA));
+
+
+}
+
+void DEC_abs() 
+{
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+    a.write(0xFFFA,0xA);
+    
+	//a.dumpData();
+    a.write(0xFFF0,0xCE);   //add 5 to accum
+    a.write(0xFFF1,0xFA); 
+    //a.dumpData();
+    a.write(0xFFF2,0xFF);   //dec accum
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();
+
+
+    std::cout<<"Expected at 0xFFFA: 9\n";
+	printf("Actual at 0xFFFA: %X\n", ram.read(0xFFFA));
+
+}
+
+
+
+void STA_ABS()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+    
+	//a.dumpData();
+    a.write(0xFFF0,0x69);   //add 5 to accum
+    a.write(0xFFF1,0x5);
+    //a.dumpData();
+
+    a.write(0xFFF2,0x8D);
+    a.write(0xFFF3,0xFA);
+    a.write(0xFFF4,0xFF);
+
+
+    //a.dumpData();
+    //printf("%X\n",a.read(0xFFFD));
+    a.execute();
+    a.execute();
+
+	a.dumpRegisters();	
+
+    std::cout<<"Expected at 0xFFFA: 5\n";
+	printf("Actual at 0xFFFA: %X\n", ram.read(0xFFFA));
+
+
+}
+
+void SEC_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0x38);
+
+    
+	//a.dumpData();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+    std::cout<<"test: SEC_TEST();\n";
+	a.dumpRegisters();
+
+    std::cout<<"Expected status register: 1000 0000\nActual: ";
+	
+	a.dump_status_all();
+}
+
+
+void SEI_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0x78);
+
+    
+	//a.dumpData();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+    	std::cout<<"test: SEI_TEST();\n";
+	a.dumpRegisters();
+
+    std::cout<<"Expected status register: 0010 0000\nActual: ";
+	
+	a.dump_status_all();
+}
+
+
+void SED_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0xF8);
+
+    
+	//a.dumpData();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+    std::cout<<"test: SED_TEST();\n";
+	a.dumpRegisters();
+
+    std::cout<<"Expected status register: 0001 0000\nActual: ";
+	
+	a.dump_status_all();
+}
+
+void CLC_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0x38);
+	a.write(0xFFF1,0x18);
+    
+	//a.dumpData();
+    a.execute();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+    std::cout<<"test: CLC_TEST();\n";
+	a.dumpRegisters();
+
+    std::cout<<"Expected status register: 0000 0000\nActual: ";
+	
+	a.dump_status_all();
+}
+
+
+void CLI_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0x78);
+	a.write(0xFFF1,0x58);
+    
+	//a.dumpData();
+    a.execute();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+	std::cout<<"test: CLI_TEST();\n";
+    a.dumpRegisters();
+
+    std::cout<<"Expected status register: 0000 0000\nActual: ";
+	
+	a.dump_status_all();
+}
+
+
+void CLD_TEST()
+{
+
+    Memory ram;
+    CPU a(&ram);
+    a.write(0xFFFC,0xF0);
+    a.write(0xFFFD,0xFF); //Program starts at 0xFFF0
+    a.reset();
+
+	a.write(0xFFF0,0xF8);
+	a.write(0xFFF1,0xD8);
+
+    
+	//a.dumpData();
+    a.execute();
+    a.execute();
+
+	//printf("status: %x", CPUstatus);
+    
+	std::cout<<"test: CLD_TEST();\n";
+	a.dumpRegisters();
+    
+    std::cout<<"Expected status register: 0000 0000\nActual: ";
+	
+	a.dump_status_all();
+}
 int main()
 {
     LDA_ABS();
@@ -311,4 +598,26 @@ int main()
     BNE_TEST(); 
     std::cout<<"====\n";
     BEQ_TEST(); 
+    std::cout<<"====\n";
+    ROL_IMP();
+    std::cout<<"====\n";
+    ROL_ABS(); 
+    std::cout<<"====\n";
+    DEC_abs();
+    std::cout<<"====\n";
+    STA_ABS();
+    std::cout<<"====\n";
+    SEC_TEST();
+    std::cout<<"====\n";
+    SEI_TEST();
+    std::cout<<"====\n";
+    SED_TEST();
+    std::cout<<"====\n";
+    CLC_TEST();
+    std::cout<<"====\n";
+    CLD_TEST();
+    std::cout<<"====\n";
+	CLI_TEST();
+
+
 }
