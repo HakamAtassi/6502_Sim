@@ -120,7 +120,7 @@ The Status Register is 8 bits long, with each bit (except for unused bit 5) indi
   - Break
 - U
   - Unused
-- O
+- V
   - Overflow
 - N
   - Negative
